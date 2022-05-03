@@ -17,7 +17,8 @@ jobs:
     needs: check-key
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Build Lit
         run: curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
@@ -29,19 +30,21 @@ jobs:
           name: id_rsa
           known_hosts: unnecessary  # We're not actually doing ssh
 
-      - name: Read author config, run Lit auth, publish to Lit
+      - name: Read author config from package.lua
+        id: pkg-meta
         run: |
-          tmpdir=${{ runner.temp }}
-          usernm=${{ github.actor }}
           script="
-            local fs = require 'fs'
-            local info = dofile 'package.lua'
-            fs.writeFileSync('$tmpdir/_name', info.author and info.author.name or 'Lit Publish Github Action')
-            fs.writeFileSync('$tmpdir/_email', info.author and info.author.email or '$usernm@users.noreply.github.com')
+            local pkg = dofile 'package.lua'
+            local name = pkg.author and pkg.author.name or 'Lit Publish Github Action'
+            local email = pkg.author and pkg.author.email or (pkg.name:match('^[^/]+')..'@users.noreply.github.com')
+            print('::set-output name=name::'..name)
+            print('::set-output name=email::'..email)
           "
           ./luvit -e "$script"
 
-          timeout --preserve-status -s INT -k 3 30 ./lit auth $usernm "$(cat $tmpdir/_name)" "$(cat $tmpdir/_email)"
+      - name: Run Lit auth, publish to Lit
+        run: |
+          timeout --preserve-status -s INT -k 3 30 ./lit auth ${{ github.actor }} "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
           timeout --preserve-status -s INT -k 3 30 ./lit publish .
 
       - run: echo "Done."
