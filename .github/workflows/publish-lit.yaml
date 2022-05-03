@@ -1,0 +1,47 @@
+name: Publish to Lit
+
+on: workflow_dispatch
+
+jobs:
+  check-key:
+    runs-on: ubuntu-latest
+    env:
+      LIT_RSA_KEY: ${{ secrets.LIT_RSA_KEY }}
+    if: ${{ env.LIT_RSA_KEY == '' }}
+    steps:
+      - uses: actions/github-script@v3
+        with:
+          script: core.setFailed('LIT_RSA_KEY is empty! Specify LIT_RSA_KEY under repo settings -> Secrets (Actions) -> New Repo Secret.')
+
+  publish:
+    needs: check-key
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Lit
+        run: curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
+
+      - name: Install RSA key in ~/.ssh
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.LIT_RSA_KEY }}
+          name: id_rsa
+          known_hosts: unnecessary  # We're not actually doing ssh
+
+      - name: Read author config, run Lit auth, publish to Lit
+        run: |
+          tmpdir=${{ runner.temp }}
+          usernm=${{ github.actor }}
+          script="
+            local fs = require 'fs'
+            local info = dofile 'package.lua'
+            fs.writeFileSync('$tmpdir/_name', info.author and info.author.name or 'Lit Publish Github Action')
+            fs.writeFileSync('$tmpdir/_email', info.author and info.author.email or '$usernm@users.noreply.github.com')
+          "
+          ./luvit -e "$script"
+
+          timeout --preserve-status -s INT -k 3 30 ./lit auth $usernm "$(cat $tmpdir/_name)" "$(cat $tmpdir/_email)"
+          timeout --preserve-status -s INT -k 3 30 ./lit publish .
+
+      - run: echo "Done."
