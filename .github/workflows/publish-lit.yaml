@@ -55,7 +55,7 @@ jobs:
           LABEL: 'lit'
           STATUS: ${{ steps.pkg-meta.outputs.version }}
           COLOR: 0594BD
-          GITHUB_TOKEN: aaaa  # Only needed for private repos I think
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print badge markdown text
         run: |
