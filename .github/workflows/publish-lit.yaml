@@ -5,11 +5,11 @@ on: workflow_dispatch
 jobs:
   check-key:
     runs-on: ubuntu-latest
-    env:
-      LIT_RSA_KEY: ${{ secrets.LIT_RSA_KEY }}
-    if: ${{ env.LIT_RSA_KEY == '' }}
     steps:
       - uses: actions/github-script@v3
+        env:
+          LIT_RSA_KEY: ${{ secrets.LIT_RSA_KEY }}
+        if: ${{ env.LIT_RSA_KEY == '' }}
         with:
           script: core.setFailed('LIT_RSA_KEY is empty! Specify LIT_RSA_KEY under repo settings -> Secrets (Actions) -> New Repo Secret.')
 
