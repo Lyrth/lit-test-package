@@ -1,4 +1,4 @@
-name: Publish to Lit
+name: Lit Publish
 
 on: workflow_dispatch
 
@@ -48,19 +48,10 @@ jobs:
           timeout --preserve-status -s INT -k 3 30 ./lit auth ${{ steps.pkg-meta.outputs.username }} "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
           timeout --preserve-status -s INT -k 3 30 ./lit publish .
 
-      - name: Update Lit badge
-        uses: RubbaBoy/BYOB@v1.2.1
-        with:
-          NAME: litver
-          LABEL: 'lit'
-          STATUS: ${{ steps.pkg-meta.outputs.version }}
-          COLOR: 0594BD
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Print badge markdown text
         run: |
-          echo "Copy the following text to your README.md file to display a package version badge."
+          echo "Copy the following text to your README.md file to display a publish status badge."
           echo ""
-          echo "[![View in Lit](https://byob.yarr.is/${{ github.repository }}/litver)](https://luvit.io/lit.html#author:${{ steps.pkg-meta.outputs.username }}%20${{ steps.pkg-meta.outputs.packageid }})"
+          echo "[![Lit Publish](https://github.com/${{ github.repository }}/actions/workflows/publish-lit.yaml/badge.svg)](https://luvit.io/lit.html#author:${{ steps.pkg-meta.outputs.username }}%20${{ steps.pkg-meta.outputs.packageid }})"
 
       - run: echo "Done."

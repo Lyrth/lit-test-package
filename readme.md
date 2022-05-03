@@ -1,4 +1,4 @@
 
 # lit-test-package
 
-[![View in Lit](https://byob.yarr.is/Lyrth/lit-test-package/litver)](https://luvit.io/lit.html#author:Lyrth%20test-package)
+[![Lit Publish](https://github.com/Lyrth/lit-test-package/actions/workflows/publish-lit.yaml/badge.svg)](https://luvit.io/lit.html#author:Lyrth%20test-package)
