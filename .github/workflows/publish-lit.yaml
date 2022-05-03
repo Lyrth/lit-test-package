@@ -35,8 +35,6 @@ jobs:
         run: |
           script="
             local pkg = dofile 'package.lua'
-            local name = 
-            local email = 
             print('::set-output name=username::' .. pkg.name:match('^[^/]+'))
             print('::set-output name=packageid::' .. pkg.name:match('^[^/]+/(.+)'))
             print('::set-output name=name::' .. (pkg.author and pkg.author.name or 'Lit Publish Github Action'))
