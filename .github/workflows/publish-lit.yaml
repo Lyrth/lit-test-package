@@ -11,7 +11,7 @@ jobs:
           LIT_RSA_KEY: ${{ secrets.LIT_RSA_KEY }}
         if: ${{ env.LIT_RSA_KEY == '' }}
         with:
-          script: core.setFailed('LIT_RSA_KEY is empty! Specify LIT_RSA_KEY under repo settings -> Secrets (Actions) -> New Repo Secret.')
+          script: core.setFailed('LIT_RSA_KEY is empty! Specify LIT_RSA_KEY under repo/org settings -> Secrets (Actions) -> New Repo/Org Secret.')
 
   publish:
     needs: check-key
@@ -50,8 +50,6 @@ jobs:
 
       - name: Print badge markdown text
         run: |
-          echo "Copy the following text to your README.md file to display a publish status badge."
-          echo ""
-          echo "[![Lit Publish](https://github.com/${{ github.repository }}/actions/workflows/publish-lit.yaml/badge.svg)](https://luvit.io/lit.html#author:${{ steps.pkg-meta.outputs.username }}%20${{ steps.pkg-meta.outputs.packageid }})"
+          echo "::notice title=Copy the following text to your README.md file to display a publish status badge.::[![Lit Publish](https://github.com/${{ github.repository }}/actions/workflows/publish-lit.yaml/badge.svg)](https://luvit.io/lit.html#author:${{ steps.pkg-meta.outputs.username }}%20${{ steps.pkg-meta.outputs.packageid }})"
 
       - run: echo "Done."
