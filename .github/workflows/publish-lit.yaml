@@ -24,10 +24,11 @@ jobs:
         run: curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
 
       - name: Install RSA key in ~/.ssh/id_rsa
+        env:
+          lit_key: ${{ secrets.LIT_RSA_KEY }}
         run: |
           mkdir ~/.ssh
-          key="${{ secrets.LIT_RSA_KEY }}"
-          echo "$key" > ~/.ssh/id_rsa
+          echo "$lit_key" > ~/.ssh/id_rsa
 
       - name: Read author config from package.lua
         id: pkg-meta
@@ -44,8 +45,11 @@ jobs:
 
       - name: Run Lit auth, publish to Lit
         run: |
-          timeout --preserve-status -s INT -k 3 30 ./lit auth ${{ steps.pkg-meta.outputs.username }} "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
-          timeout --preserve-status -s INT -k 3 30 ./lit publish .
+          ./lit auth ${{ steps.pkg-meta.outputs.username }} "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
+          ./lit publish .
+
+      - name: Delete id_rsa to prevent it appearing in artifacts or anywhere else
+        run: rm -f ~/.ssh/id_rsa
 
       - name: Print badge markdown text
         run: |
