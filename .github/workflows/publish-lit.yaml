@@ -24,7 +24,9 @@ jobs:
         run: curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
 
       - name: Install RSA key in ~/.ssh
-        run: printf "${{ secrets.LIT_RSA_KEY }}" >~/.ssh
+        run: |
+          key="${{ secrets.LIT_RSA_KEY }}"
+          echo "$key" > ~/.ssh
 
       - name: Read author config from package.lua
         id: pkg-meta
