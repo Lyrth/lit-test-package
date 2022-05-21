@@ -23,10 +23,11 @@ jobs:
       - name: Build Lit
         run: curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
 
-      - name: Install RSA key in ~/.ssh
+      - name: Install RSA key in ~/.ssh/id_rsa
         run: |
+          mkdir ~/.ssh
           key="${{ secrets.LIT_RSA_KEY }}"
-          echo "$key" > ~/.ssh
+          echo "$key" > ~/.ssh/id_rsa
 
       - name: Read author config from package.lua
         id: pkg-meta
