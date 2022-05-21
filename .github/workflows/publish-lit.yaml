@@ -3,25 +3,20 @@ name: Lit Publish
 on: workflow_dispatch
 
 jobs:
-  check-key:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/github-script@v3
-        env:
-          LIT_RSA_KEY: ${{ secrets.LIT_RSA_KEY }}
-        if: ${{ env.LIT_RSA_KEY == '' }}
-        with:
-          script: core.setFailed('LIT_RSA_KEY is empty! Specify LIT_RSA_KEY under repo/org settings -> Secrets (Actions) -> New Repo/Org Secret.')
-
   publish:
-    needs: check-key
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Build Lit
-        run: curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sh
+      - name: Check if key exists
+        env:
+          LIT_RSA_KEY: ${{ secrets.LIT_RSA_KEY }}
+        run: |
+          if [[ -z "$LIT_RSA_KEY" ]]; then
+            echo "::error title=LIT_RSA_KEY secret missing::LIT_RSA_KEY is empty! Specify LIT_RSA_KEY under repo/org settings -> Secrets (Actions) -> New Repo/Org Secret."
+            exit 1
+          fi
 
       - name: Install RSA key in ~/.ssh/id_rsa
         env:
@@ -29,6 +24,11 @@ jobs:
         run: |
           mkdir ~/.ssh
           echo "$lit_key" > ~/.ssh/id_rsa
+
+      - name: Build Lit
+        run: |
+          # make curl calls in script retry on 5xx http errors
+          curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sed 's/curl /curl --retry 5 --retry-max-time 30 /' | sh
 
       - name: Read author config from package.lua
         id: pkg-meta
@@ -55,4 +55,5 @@ jobs:
         run: |
           echo "::notice title=Copy the following text to your README.md file to display a publish status badge.::[![Lit Publish](https://github.com/${{ github.repository }}/actions/workflows/publish-lit.yaml/badge.svg)](https://luvit.io/lit.html#author:${{ steps.pkg-meta.outputs.username }}%20${{ steps.pkg-meta.outputs.packageid }})"
 
-      - run: echo "Done."
+      - name: Done.
+        run: echo "Done."
