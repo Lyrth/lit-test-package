@@ -12,7 +12,7 @@ jobs:
       - name: Run publish action
         uses: ./.github/actions/lit-publish-action
         with:
-          lit-key: invalidkey
+          lit-key: ${{ secrets.LIT_RSA_KEY }}
 
       - name: Done.
         run: echo "Done."
