@@ -1,0 +1,75 @@
+name: Lit Publish
+description: Perform `lit publish` on the current working directory.
+
+inputs:
+  lit-key:
+    description: The private RSA key to use for lit auth and publishing.
+    required: true
+
+# outputs:
+
+runs:
+  using: composite
+  steps:
+    - name: Check if key exists and is valid
+      env:
+        LIT_RSA_KEY: ${{ inputs.lit-key }}
+      shell: bash
+      run: |
+        if [[ "$LIT_RSA_KEY" != *"BEGIN RSA PRIVATE KEY"* ]]; then
+          echo "::error title=lit-key input is invalid::lit-key input is missing/invalid! Make sure to specify `lit-key` as input to this action, and follow https://github.com/luvit/lit/wiki/Creating-Your-First-Package#authentication"
+          exit 1
+        fi
+
+    - name: Check if package.lua exists and is not empty
+      shell: bash
+      run: |
+        if ! [ -s "package.lua" ]; then
+          echo "::error title=package.lua is missing/empty::package.lua is missing/empty! Have you run actions/checkout beforehand, and used package.lua for package metadata instead?"
+          exit 1
+        fi
+
+    - name: Install RSA key in ~/.ssh/id_rsa
+      env:
+        LIT_RSA_KEY: ${{ inputs.lit-key }}
+      shell: bash
+      run: |
+        mkdir ~/.ssh
+        echo "$LIT_RSA_KEY" > ~/.ssh/id_rsa
+
+    - name: Make temporary dir for binaries (don't clutter current repo)
+      shell: bash
+      run: |
+        echo "LIT_DIR=$(mktemp -d)" >> $GITHUB_ENV
+
+    - name: Build Lit
+      shell: bash
+      run: |
+        # make curl calls in script retry on 5xx http errors
+        cd "${{ env.LIT_DIR }}"
+        curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sed 's/curl /curl --retry 5 --retry-max-time 30 /' | sh
+
+    - name: Read author config from package.lua
+      id: pkg-meta
+      shell: bash
+      run: |
+        script="
+          local pkg = dofile 'package.lua'
+          print('::set-output name=username::'  .. pkg.name:match('^[^/]+'))
+          print('::set-output name=packageid::' .. pkg.name:match('^[^/]+/(.+)'))
+          print('::set-output name=name::'      .. (pkg.author and pkg.author.name or 'Lit Publish Github Action'))
+          print('::set-output name=email::'     .. (pkg.author and pkg.author.email or (pkg.name:match('^[^/]+')..'@users.noreply.github.com')))
+          print('::set-output name=version::'   .. 'v'..pkg.version)
+        "
+        "${{ env.LIT_DIR }}/luvit" -e "$script"
+
+    - name: Run Lit auth, publish to Lit
+      shell: bash
+      run: |
+        "${{ env.LIT_DIR }}/lit" auth ${{ steps.pkg-meta.outputs.username }} "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
+        "${{ env.LIT_DIR }}/lit" publish .
+
+    - name: Delete id_rsa to prevent it appearing in artifacts or anywhere else
+      shell: bash
+      run: |
+        rm -f ~/.ssh/id_rsa
