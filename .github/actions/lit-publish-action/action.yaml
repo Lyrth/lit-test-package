@@ -44,10 +44,10 @@ runs:
         echo "$HOME/bin" >> $GITHUB_PATH
 
     - name: Build Lit
-      working-directory: ~/bin
       shell: bash
       run: |
         # sed call: make curl calls in script retry on 5xx http errors
+        cd ~/bin
         curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sed 's/curl /curl --retry 5 --retry-max-time 30 /' | sh
 
     - name: Read author config from package.lua
