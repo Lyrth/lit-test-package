@@ -11,21 +11,18 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check if key exists and is valid
-      env:
-        LIT_RSA_KEY: ${{ inputs.lit-key }}
+    - name: Error if key doesn't exist or is invalid
+      if: ${{ !contains(inputs.lit-key, '--BEGIN RSA PRIVATE KEY--') }}
       shell: bash
       run: |
-        if [[ "$LIT_RSA_KEY" != *"BEGIN RSA PRIVATE KEY"* ]]; then
-          echo "::error title=lit-key input is invalid::lit-key input is missing/invalid! Make sure to specify `lit-key` as input to this action, and follow https://github.com/luvit/lit/wiki/Creating-Your-First-Package#authentication"
-          exit 1
-        fi
+        echo "::error title=lit-key input is invalid::lit-key input is missing/invalid! Make sure to specify `lit-key` as input to this action, and follow https://github.com/luvit/lit/wiki/Creating-Your-First-Package#authentication"
+        exit 1
 
     - name: Check if package.lua exists and is not empty
       shell: bash
       run: |
         if ! [ -s "package.lua" ]; then
-          echo "::error title=package.lua is missing/empty::package.lua is missing/empty! Have you run actions/checkout beforehand, and used package.lua for package metadata instead?"
+          echo "::error title=package.lua is missing/empty::package.lua is missing/empty! Have you run `actions/checkout` beforehand, and used package.lua for package metadata instead?"
           exit 1
         fi
 
@@ -67,10 +64,11 @@ runs:
     - name: Run Lit auth, publish to Lit
       shell: bash
       run: |
-        lit auth ${{ steps.pkg-meta.outputs.username }} "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
+        lit auth "${{ steps.pkg-meta.outputs.username }}" "${{ steps.pkg-meta.outputs.name }}" "${{ steps.pkg-meta.outputs.email }}"
         lit publish .
 
     - name: Delete id_rsa to prevent it appearing in artifacts or anywhere else
+      if: ${{ always() }}
       shell: bash
       run: |
         rm -f ~/.ssh/id_rsa
