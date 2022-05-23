@@ -9,6 +9,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Install luvit binaries
+        uses: ./.github/actions/lit-download-action
+
       - name: Run publish action
         uses: ./.github/actions/lit-publish-action
         with:

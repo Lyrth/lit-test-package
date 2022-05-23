@@ -1,0 +1,28 @@
+name: Lit Download
+description: Downloads lit, luvi, and luvit binaries and installs it under `$HOME/bin`, adding it to `GITHUB_PATH`. 
+
+runs:
+  using: composite
+  steps:
+    - name: Check if luvit binaries exist already
+      id: luvit-check
+      shell: bash
+      run: |
+        if ! [[ -x "$HOME/bin/lit" && -x "$HOME/bin/luvi" && -x "$HOME/bin/luvit" ]]; then
+          echo "::set-output name=missing::true"
+        fi
+
+    - name: Make dir for binaries and add it to path (don't clutter current repo)
+      if: ${{ steps.luvit-check.outputs.missing }}
+      shell: bash
+      run: |
+        mkdir -p ~/bin
+        echo "$HOME/bin" >> $GITHUB_PATH
+
+    - name: Build Lit
+      if: ${{ steps.luvit-check.outputs.missing }}
+      shell: bash
+      run: |
+        # sed call: make curl calls in script retry on 5xx http errors
+        cd ~/bin
+        curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sed 's/curl /curl --retry 5 --retry-max-time 30 /' | sh

@@ -26,26 +26,8 @@ runs:
           exit 1
         fi
 
-    - name: Install RSA key in ~/.ssh/id_rsa
-      env:
-        LIT_RSA_KEY: ${{ inputs.lit-key }}
-      shell: bash
-      run: |
-        mkdir -p ~/.ssh
-        echo "$LIT_RSA_KEY" > ~/.ssh/id_rsa
-
-    - name: Make dir for binaries and add it to path (don't clutter current repo)
-      shell: bash
-      run: |
-        mkdir -p ~/bin
-        echo "$HOME/bin" >> $GITHUB_PATH
-
-    - name: Build Lit
-      shell: bash
-      run: |
-        # sed call: make curl calls in script retry on 5xx http errors
-        cd ~/bin
-        curl -L https://github.com/luvit/lit/raw/master/get-lit.sh | sed 's/curl /curl --retry 5 --retry-max-time 30 /' | sh
+    - name: Install luvit binaries
+      uses: ./.github/actions/lit-download-action
 
     - name: Read author config from package.lua
       id: pkg-meta
@@ -60,6 +42,14 @@ runs:
           print('::set-output name=version::'   .. 'v'..pkg.version)
         "
         luvit -e "$script"
+
+    - name: Install RSA key in ~/.ssh/id_rsa
+      env:
+        LIT_RSA_KEY: ${{ inputs.lit-key }}
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "$LIT_RSA_KEY" > ~/.ssh/id_rsa
 
     - name: Run Lit auth, publish to Lit
       shell: bash
